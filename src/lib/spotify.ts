@@ -207,3 +207,18 @@ export async function repeat(mode: RepeatMode, accessToken: string) {
     },
   });
 }
+
+export async function setVolume(percent: Number, accessToken: string) {
+  const url = `${END_POINT}/v1/me/player/volume?volume_percent=${percent}`;
+
+  try {
+    return await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  } catch (e) {
+    throw e;
+  }
+}
