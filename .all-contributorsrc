@@ -55,6 +55,17 @@
         "code",
         "doc"
       ]
+    },
+    {
+      "login": "maxwellfortney",
+      "name": "Maxwell Fortney",
+      "avatar_url": "https://avatars.githubusercontent.com/u/29241388?v=4",
+      "profile": "https://github.com/maxwellfortney",
+      "contributions": [
+        "code",
+        "test",
+        "ideas"
+      ]
     }
   ],
   "contributorsPerLine": 7,
