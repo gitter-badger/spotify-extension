@@ -85,7 +85,7 @@ export class App {
     } else {
       displayControlButtons('play');
     }
-    displayVolumeControl(this.device.volumePercent, true);
+    displayVolumeControl(this.device.volumePercent);
 
     // register events for player controls
     // prev, play, next, volume, mute
