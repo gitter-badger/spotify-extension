@@ -7,7 +7,6 @@ describe('Testing utils', () => {
   let sandboxes;
   let getFunc;
   let setFunc;
-  let now;
 
   beforeEach(() => {
     sandboxes = sinon.createSandbox();
@@ -81,7 +80,7 @@ describe('Testing utils', () => {
 
   describe('isChristmasPeriod', () => {
     it('should return true - Dec 06', () => {
-      now = sandboxes.useFakeTimers({
+      sandboxes.useFakeTimers({
         now: new Date(2020, 11, 6, 23, 0),
       });
       const actual = isChristmasPeriod();
@@ -89,7 +88,7 @@ describe('Testing utils', () => {
     });
 
     it('should return true - Jan 06', () => {
-      now = sandboxes.useFakeTimers({
+      sandboxes.useFakeTimers({
         now: new Date(2020, 0, 6, 23, 0),
       });
       const actual = isChristmasPeriod();
@@ -97,7 +96,7 @@ describe('Testing utils', () => {
     });
 
     it('should return false - March 06', () => {
-      now = sandboxes.useFakeTimers({
+      sandboxes.useFakeTimers({
         now: new Date(2020, 2, 6, 23, 0),
       });
       const actual = isChristmasPeriod();
