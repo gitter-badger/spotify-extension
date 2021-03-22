@@ -1,4 +1,4 @@
-import { TrackInfo, Token, Device, RepeatMode } from './interface';
+import { TrackInfo, Token, Device, RepeatMode } from '../interface';
 import {
   pause as pauseTrack,
   next as nextTrack,
@@ -8,9 +8,11 @@ import {
   removeTrack,
   repeat,
   setVolume,
-} from './spotify';
+} from '../spotify';
 import ColorThief from 'colorthief';
-import { updateTrackCache, updateTrackInfo } from './utils';
+import { updateTrackCache, updateTrackInfo } from '../utils';
+import { LOUD_VOLUME } from '../constants';
+import { fillColorSVGPath } from './utils/fill-color-svg-path';
 
 const LIMIT = 128;
 const BOX_SHADOW = '10px 0px 20px 15px';
@@ -34,6 +36,7 @@ export function displayTrackInfo(playback: TrackInfo) {
   const repeatOne = document.getElementById('repeat-one');
   const divider = document.getElementById('divider');
   const volumeIcon = document.getElementById('volume-icon');
+  const volumeMediumIcon = document.getElementById('volume-medium-icon');
   const volumeMutedIcon = document.getElementById('volume-muted-icon');
 
   const { title, artist, coverPhoto, trackUrl } = playback;
@@ -89,8 +92,10 @@ export function displayTrackInfo(playback: TrackInfo) {
       infoBox.style.boxShadow = `${BOX_SHADOW} ${bgRGB}`;
       divider.style.backgroundColor = textRGB;
       renderSaveButton(playback, textRGB);
-      volumeIcon.style.color = textRGB;
-      volumeMutedIcon.style.color = textRGB;
+
+      fillColorSVGPath(volumeIcon, textRGB);
+      fillColorSVGPath(volumeMediumIcon, textRGB);
+      fillColorSVGPath(volumeMutedIcon, textRGB);
     } else {
       img.addEventListener('load', function () {
         const { background, text } = getColors();
@@ -111,8 +116,10 @@ export function displayTrackInfo(playback: TrackInfo) {
         infoBox.style.boxShadow = `${BOX_SHADOW} ${bgRGB}`;
         divider.style.backgroundColor = textRGB;
         renderSaveButton(playback, textRGB);
-        volumeIcon.style.color = textRGB;
-        volumeMutedIcon.style.color = textRGB;
+
+        fillColorSVGPath(volumeIcon, textRGB);
+        fillColorSVGPath(volumeMediumIcon, textRGB);
+        fillColorSVGPath(volumeMutedIcon, textRGB);
       });
     }
   }
@@ -257,18 +264,33 @@ export function displayControlButtons(mode: ButtonType) {
 export function displayVolumeControl(volumePercent: number, shouldSetInputValue: boolean = true) {
   const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
   const volumeIcon = document.getElementById('volume-icon');
+  const volumeMediumIcon = document.getElementById('volume-medium-icon');
   const volumeMutedIcon = document.getElementById('volume-muted-icon');
   const btnVolume = document.getElementById('volume');
 
-  const volumeType: VolumeType = volumePercent === 0 ? 'turn-off' : 'turn-on';
+  let volumeType: VolumeType = 'medium';
+  if (volumePercent >= LOUD_VOLUME) {
+    volumeType = 'loud';
+  } else if (volumePercent > 0 && volumePercent < LOUD_VOLUME) {
+    volumeType = 'medium';
+  } else if (volumePercent === 0) {
+    volumeType = 'off';
+  }
 
   switch (volumeType) {
-    case 'turn-off':
+    case 'off':
       volumeMutedIcon.classList.remove('mini-spotify-volume-button-hide');
+      volumeMediumIcon.classList.add('mini-spotify-volume-button-hide');
       volumeIcon.classList.add('mini-spotify-volume-button-hide');
       break;
-    case 'turn-on':
+    case 'medium':
       volumeMutedIcon.classList.add('mini-spotify-volume-button-hide');
+      volumeMediumIcon.classList.remove('mini-spotify-volume-button-hide');
+      volumeIcon.classList.add('mini-spotify-volume-button-hide');
+      break;
+    case 'loud':
+      volumeMutedIcon.classList.add('mini-spotify-volume-button-hide');
+      volumeMediumIcon.classList.add('mini-spotify-volume-button-hide');
       volumeIcon.classList.remove('mini-spotify-volume-button-hide');
       break;
   }
@@ -350,12 +372,13 @@ export function registerEvents(token: Token, device: Device, playback: TrackInfo
     const volumeType: VolumeType = btnVolume.dataset.volume as VolumeType;
 
     switch (volumeType) {
-      case 'turn-on':
+      case 'loud':
+      case 'medium':
         savedVolume = parseInt(volumeSlider.value);
         await setVolume(MIN_VOLUME, token.accessToken);
         displayVolumeControl(MIN_VOLUME);
         break;
-      case 'turn-off':
+      case 'off':
         await setVolume(savedVolume, token.accessToken);
         displayVolumeControl(savedVolume);
         break;
@@ -454,4 +477,4 @@ export function registerEvents(token: Token, device: Device, playback: TrackInfo
 
 type ButtonType = 'play' | 'pause';
 type BoxType = 'player' | 'no-device-open-notification' | 'login-notification';
-type VolumeType = 'turn-on' | 'turn-off';
+type VolumeType = 'loud' | 'medium' | 'off';
