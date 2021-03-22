@@ -11,9 +11,3 @@ export const VALID_DEVICE_TYPES = ['Computer'];
 export const HOUR_IN_SECOND = 60 * 60;
 
 export const CONTEXT_MENU_ITEM_TEXT = 'Search Spotify for "%s"';
-
-export const DEFAULT_SCROLL_DELTA = 5;
-
-export const MIN_VOL = 0;
-
-export const MAX_VOL = 100;

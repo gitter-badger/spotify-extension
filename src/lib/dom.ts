@@ -11,13 +11,14 @@ import {
 } from './spotify';
 import ColorThief from 'colorthief';
 import { updateTrackCache, updateTrackInfo } from './utils';
-import { DEFAULT_SCROLL_DELTA, MAX_VOL, MIN_VOL } from './constants';
 
 const LIMIT = 128;
 const BOX_SHADOW = '10px 0px 20px 15px';
 const DEFAULT_DARK_PALETTE = [31, 64, 104];
 const DEFAULT_LIGHT_PALETTE = [244, 244, 244];
 const TIME_OUT = 200;
+const MIN_VOLUME = 0;
+const DEBOUNCE_TIMEOUT = 30;
 
 export function displayTrackInfo(playback: TrackInfo) {
   const songTitle = document.getElementById('title');
@@ -275,7 +276,7 @@ export function displayVolumeControl(volumePercent: number, shouldSetInputValue:
   btnVolume.setAttribute('data-volume', volumeType);
 
   if (shouldSetInputValue) {
-    volumeSlider.value = volumePercent.toString();
+    volumeSlider.setAttribute('value', volumePercent.toString());
   }
 }
 
@@ -319,34 +320,20 @@ export function registerEvents(token: Token, device: Device, playback: TrackInfo
   let savedVolume = device.volumePercent;
 
   document.addEventListener('wheel', async (e) => {
-    e.preventDefault();
-    const inputVal = parseInt(volumeSlider.value);
-
-    const wheelType: WheelType = e.deltaY > MIN_VOL ? 'wheel-down' : 'wheel-up';
-
-    switch (wheelType) {
-      case 'wheel-down':
-        if (inputVal - DEFAULT_SCROLL_DELTA <= MIN_VOL) {
-          displayVolumeControl(MIN_VOL);
-          await setVolume(MIN_VOL, token.accessToken);
-        } else {
-          displayVolumeControl(inputVal - DEFAULT_SCROLL_DELTA);
-          await setVolume(inputVal - DEFAULT_SCROLL_DELTA, token.accessToken);
-        }
-        break;
-      case 'wheel-up':
-        if (inputVal + DEFAULT_SCROLL_DELTA >= MAX_VOL) {
-          displayVolumeControl(MAX_VOL);
-          await setVolume(MAX_VOL, token.accessToken);
-        } else {
-          displayVolumeControl(inputVal + DEFAULT_SCROLL_DELTA);
-          await setVolume(inputVal + DEFAULT_SCROLL_DELTA, token.accessToken);
-        }
-        break;
+    // wheel-down
+    if (e.deltaY > 0) {
+      volumeSlider.stepDown();
+    } else {
+      // wheel-up
+      volumeSlider.stepUp();
     }
+    const val = parseInt(volumeSlider.value);
+    displayVolumeControl(val);
+    await setVolume(val, token.accessToken);
   });
 
-  volumeSlider.onchange = async function (e) {
+  volumeSlider.oninput = async function (e) {
+    e.preventDefault();
     const inputVal = parseInt((e.target as HTMLInputElement).value);
     if (inputVal !== device.volumePercent) {
       if (debounceTimer) clearTimeout(debounceTimer);
@@ -354,7 +341,7 @@ export function registerEvents(token: Token, device: Device, playback: TrackInfo
       debounceTimer = setTimeout(async () => {
         await setVolume(inputVal, token.accessToken);
         displayVolumeControl(inputVal, false);
-      }, 30);
+      }, DEBOUNCE_TIMEOUT);
     }
   };
 
@@ -365,8 +352,8 @@ export function registerEvents(token: Token, device: Device, playback: TrackInfo
     switch (volumeType) {
       case 'turn-on':
         savedVolume = parseInt(volumeSlider.value);
-        await setVolume(MIN_VOL, token.accessToken);
-        displayVolumeControl(MIN_VOL);
+        await setVolume(MIN_VOLUME, token.accessToken);
+        displayVolumeControl(MIN_VOLUME);
         break;
       case 'turn-off':
         await setVolume(savedVolume, token.accessToken);
@@ -468,4 +455,3 @@ export function registerEvents(token: Token, device: Device, playback: TrackInfo
 type ButtonType = 'play' | 'pause';
 type BoxType = 'player' | 'no-device-open-notification' | 'login-notification';
 type VolumeType = 'turn-on' | 'turn-off';
-type WheelType = 'wheel-up' | 'wheel-down';
