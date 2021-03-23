@@ -11,10 +11,10 @@ import {
   removeTrack,
   checkSavedTrack,
   repeat,
+  setVolume,
 } from '../lib/spotify';
 import { parse } from '../lib/parse';
 import { playback } from './fixtures/playback';
-import { devices } from './fixtures/devices';
 import { rawData } from './fixtures/response';
 import { recentlyPlayedTrack } from './fixtures/recently-played';
 import { Token, Device } from '../lib/interface';
@@ -46,7 +46,7 @@ describe('testing Spotify class', () => {
     isRestricted: false,
     name: 'Web Player (Chrome)',
     type: 'Computer',
-    volumePercent: '100',
+    volumePercent: 100,
   };
   const originalFetch = window.fetch;
 
@@ -67,13 +67,14 @@ describe('testing Spotify class', () => {
   });
 
   it('should return data of getDevices', async () => {
-    window.fetch = mockFetchResolve(devices);
+    window.fetch = mockFetchResolve(playback);
     const data = await getDevices(token.accessToken);
+
     expect(data).toEqual({
-      id: '5fbb3ba6aa454b5534c4ba43a8c7e8e45a63ad0e',
-      isActive: false,
+      id: 'fbde13dff8a4fc2d82cea2734e0a6f80a6d7dbd7',
+      isActive: true,
       isRestricted: false,
-      name: 'Web Player (Chrome)',
+      name: 'Dzung’s MacBook Pro',
       type: 'Computer',
       volumePercent: 100,
     });
@@ -269,6 +270,21 @@ describe('testing Spotify class', () => {
     window.fetch = mockFetchReject();
     try {
       await repeat('track', token.accessToken);
+    } catch (e) {
+      expect(e.ok).toBeFalsy();
+    }
+  });
+
+  it('should run set volume', async () => {
+    window.fetch = mockFetchResolve();
+    const { ok } = await setVolume(50, token.accessToken);
+    expect(ok).toBeTruthy();
+  });
+
+  it('should not set volume', async () => {
+    window.fetch = mockFetchReject();
+    try {
+      await setVolume(50, token.accessToken);
     } catch (e) {
       expect(e.ok).toBeFalsy();
     }

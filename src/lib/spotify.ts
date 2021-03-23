@@ -1,9 +1,9 @@
 import { Token, PlayPostData, Device, TrackInfo, RepeatMode } from './interface';
-import { WEB_PLAYER_URL, END_POINT, VALID_DEVICE_TYPES } from './constants';
+import { WEB_PLAYER_URL, END_POINT } from './constants';
 
 export async function getDevices(accessToken: string) {
   try {
-    const url = `${END_POINT}/v1/me/player/devices`;
+    const url = `${END_POINT}/v1/me/player`;
 
     const res = await fetch(url, {
       cache: 'no-cache',
@@ -13,23 +13,16 @@ export async function getDevices(accessToken: string) {
     });
 
     const data = await res.json();
+    const device: Device = {
+      id: data.device.id,
+      isActive: data.device.is_active,
+      isRestricted: data.device.is_restricted,
+      name: data.device.name,
+      type: data.device.type,
+      volumePercent: data.device.volume_percent,
+    };
 
-    const devices: Device[] = data.devices
-      ? data.devices
-          .filter((item) => VALID_DEVICE_TYPES.indexOf(item.type) > -1)
-          .map((item) => {
-            return {
-              id: item.id,
-              isActive: item.is_active,
-              isRestricted: item.is_restricted,
-              name: item.name,
-              type: item.type,
-              volumePercent: item.volume_percent,
-            };
-          })
-      : [];
-
-    return devices[0];
+    return device;
   } catch (e) {
     return;
   }
@@ -199,6 +192,17 @@ export async function removeTrack(songInfo: TrackInfo, accessToken: string) {
 
 export async function repeat(mode: RepeatMode, accessToken: string) {
   const url = `${END_POINT}/v1/me/player/repeat?state=${mode}`;
+
+  return await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+export async function setVolume(percent: number, accessToken: string) {
+  const url = `${END_POINT}/v1/me/player/volume?volume_percent=${percent}`;
 
   return await fetch(url, {
     method: 'PUT',

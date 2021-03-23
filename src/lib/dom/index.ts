@@ -1,4 +1,4 @@
-import { TrackInfo, Token, Device, RepeatMode } from './interface';
+import { TrackInfo, Token, Device, RepeatMode } from '../interface';
 import {
   pause as pauseTrack,
   next as nextTrack,
@@ -7,15 +7,20 @@ import {
   saveTrack,
   removeTrack,
   repeat,
-} from './spotify';
+  setVolume,
+} from '../spotify';
 import ColorThief from 'colorthief';
-import { updateTrackCache, updateTrackInfo } from './utils';
+import { updateTrackCache, updateTrackInfo } from '../utils';
+import { LOUD_VOLUME } from '../constants';
+import { fillColorSVGPath } from './utils/fill-color-svg-path';
 
 const LIMIT = 128;
 const BOX_SHADOW = '10px 0px 20px 15px';
 const DEFAULT_DARK_PALETTE = [31, 64, 104];
 const DEFAULT_LIGHT_PALETTE = [244, 244, 244];
 const TIME_OUT = 200;
+const MIN_VOLUME = 0;
+const DEBOUNCE_TIMEOUT = 30;
 
 export function displayTrackInfo(playback: TrackInfo) {
   const songTitle = document.getElementById('title');
@@ -30,6 +35,9 @@ export function displayTrackInfo(playback: TrackInfo) {
   const repeatContext = document.getElementById('repeat-context');
   const repeatOne = document.getElementById('repeat-one');
   const divider = document.getElementById('divider');
+  const volumeIcon = document.getElementById('volume-icon');
+  const volumeMediumIcon = document.getElementById('volume-medium-icon');
+  const volumeMutedIcon = document.getElementById('volume-muted-icon');
 
   const { title, artist, coverPhoto, trackUrl } = playback;
 
@@ -84,6 +92,10 @@ export function displayTrackInfo(playback: TrackInfo) {
       infoBox.style.boxShadow = `${BOX_SHADOW} ${bgRGB}`;
       divider.style.backgroundColor = textRGB;
       renderSaveButton(playback, textRGB);
+
+      fillColorSVGPath(volumeIcon, textRGB);
+      fillColorSVGPath(volumeMediumIcon, textRGB);
+      fillColorSVGPath(volumeMutedIcon, textRGB);
     } else {
       img.addEventListener('load', function () {
         const { background, text } = getColors();
@@ -104,6 +116,10 @@ export function displayTrackInfo(playback: TrackInfo) {
         infoBox.style.boxShadow = `${BOX_SHADOW} ${bgRGB}`;
         divider.style.backgroundColor = textRGB;
         renderSaveButton(playback, textRGB);
+
+        fillColorSVGPath(volumeIcon, textRGB);
+        fillColorSVGPath(volumeMediumIcon, textRGB);
+        fillColorSVGPath(volumeMutedIcon, textRGB);
       });
     }
   }
@@ -245,6 +261,47 @@ export function displayControlButtons(mode: ButtonType) {
   }
 }
 
+export function displayVolumeControl(volumePercent: number, shouldSetInputValue: boolean = true) {
+  const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
+  const volumeIcon = document.getElementById('volume-icon');
+  const volumeMediumIcon = document.getElementById('volume-medium-icon');
+  const volumeMutedIcon = document.getElementById('volume-muted-icon');
+  const btnVolume = document.getElementById('volume');
+
+  let volumeType: VolumeType = 'medium';
+  if (volumePercent >= LOUD_VOLUME) {
+    volumeType = 'loud';
+  } else if (volumePercent > 0 && volumePercent < LOUD_VOLUME) {
+    volumeType = 'medium';
+  } else if (volumePercent === 0) {
+    volumeType = 'off';
+  }
+
+  switch (volumeType) {
+    case 'off':
+      volumeMutedIcon.classList.remove('mini-spotify-volume-button-hide');
+      volumeMediumIcon.classList.add('mini-spotify-volume-button-hide');
+      volumeIcon.classList.add('mini-spotify-volume-button-hide');
+      break;
+    case 'medium':
+      volumeMutedIcon.classList.add('mini-spotify-volume-button-hide');
+      volumeMediumIcon.classList.remove('mini-spotify-volume-button-hide');
+      volumeIcon.classList.add('mini-spotify-volume-button-hide');
+      break;
+    case 'loud':
+      volumeMutedIcon.classList.add('mini-spotify-volume-button-hide');
+      volumeMediumIcon.classList.add('mini-spotify-volume-button-hide');
+      volumeIcon.classList.remove('mini-spotify-volume-button-hide');
+      break;
+  }
+
+  btnVolume.setAttribute('data-volume', volumeType);
+
+  if (shouldSetInputValue) {
+    volumeSlider.setAttribute('value', volumePercent.toString());
+  }
+}
+
 export function displayBox(mode: BoxType) {
   const player = document.getElementById('spotify-mini-player');
   const notification = document.getElementById('spotify-mini-player-notification');
@@ -277,6 +334,56 @@ export function registerEvents(token: Token, device: Device, playback: TrackInfo
   const btnSave = document.getElementById('save');
   const btnUnSave = document.getElementById('un-save');
   const btnRepeat = document.getElementById('repeat');
+  const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
+  const btnVolume = document.getElementById('volume');
+
+  // Initialize a debounce timer in order to prevent excessive PUT requests to Spotify API on all onmousemove events
+  let debounceTimer = null;
+  let savedVolume = device.volumePercent;
+
+  document.addEventListener('wheel', async (e) => {
+    // wheel-down
+    if (e.deltaY > 0) {
+      volumeSlider.stepDown();
+    } else {
+      // wheel-up
+      volumeSlider.stepUp();
+    }
+    const val = parseInt(volumeSlider.value);
+    displayVolumeControl(val);
+    await setVolume(val, token.accessToken);
+  });
+
+  volumeSlider.oninput = async function (e) {
+    e.preventDefault();
+    const inputVal = parseInt((e.target as HTMLInputElement).value);
+    if (inputVal !== device.volumePercent) {
+      if (debounceTimer) clearTimeout(debounceTimer);
+
+      debounceTimer = setTimeout(async () => {
+        await setVolume(inputVal, token.accessToken);
+        displayVolumeControl(inputVal, false);
+      }, DEBOUNCE_TIMEOUT);
+    }
+  };
+
+  btnVolume.onclick = async function () {
+    const btnVolume = document.getElementById('volume');
+    const volumeType: VolumeType = btnVolume.dataset.volume as VolumeType;
+
+    switch (volumeType) {
+      case 'loud':
+      case 'medium':
+        savedVolume = parseInt(volumeSlider.value);
+        await setVolume(MIN_VOLUME, token.accessToken);
+        displayVolumeControl(MIN_VOLUME);
+        break;
+      case 'off':
+        await setVolume(savedVolume, token.accessToken);
+        displayVolumeControl(savedVolume);
+        break;
+    }
+  };
 
   document.addEventListener('keydown', async (e) => {
     e.preventDefault();
@@ -370,3 +477,4 @@ export function registerEvents(token: Token, device: Device, playback: TrackInfo
 
 type ButtonType = 'play' | 'pause';
 type BoxType = 'player' | 'no-device-open-notification' | 'login-notification';
+type VolumeType = 'loud' | 'medium' | 'off';

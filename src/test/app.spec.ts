@@ -28,6 +28,7 @@ describe('Testing App', () => {
   let displayControlButtons;
   let registerEvents;
   let displayTrackInfo;
+  let displayVolumeControl;
 
   // utils
   let shouldUpdateCache;
@@ -46,6 +47,7 @@ describe('Testing App', () => {
     displayControlButtons = sandboxes.stub(Dom, 'displayControlButtons');
     registerEvents = sandboxes.stub(Dom, 'registerEvents');
     displayTrackInfo = sandboxes.stub(Dom, 'displayTrackInfo');
+    displayVolumeControl = sandboxes.stub(Dom, 'displayVolumeControl');
 
     // utils
     shouldUpdateCache = sandboxes.stub(Utils, 'shouldUpdateCache');
@@ -70,6 +72,7 @@ describe('Testing App', () => {
     expect(mode).toEqual('player');
     expect(displayControlButtons.called).toBeTruthy();
     expect(displayTrackInfo.called).toBeTruthy();
+    expect(displayVolumeControl.called).toBeTruthy();
     expect(registerEvents.called).toBeTruthy();
   });
 
@@ -87,6 +90,7 @@ describe('Testing App', () => {
     expect(mode).toEqual('player');
     expect(displayControlButtons.called).toBeTruthy();
     expect(displayTrackInfo.called).toBeTruthy();
+    expect(displayVolumeControl.called).toBeTruthy();
     expect(registerEvents.called).toBeTruthy();
   });
 
@@ -106,6 +110,7 @@ describe('Testing App', () => {
     expect(mode).toEqual('player');
     expect(displayControlButtons.called).toBeTruthy();
     expect(displayTrackInfo.called).toBeTruthy();
+    expect(displayVolumeControl.called).toBeTruthy();
     expect(registerEvents.called).toBeTruthy();
   });
 
@@ -119,6 +124,7 @@ describe('Testing App', () => {
     await app.render();
     expect(displayControlButtons.called).toBeTruthy();
     expect(displayTrackInfo.called).toBeTruthy();
+    expect(displayVolumeControl.called).toBeTruthy();
     expect(registerEvents.called).toBeTruthy();
   });
 
@@ -134,6 +140,7 @@ describe('Testing App', () => {
     expect(mode).toEqual('player');
     expect(displayControlButtons.called).toBeTruthy();
     expect(displayTrackInfo.called).toBeTruthy();
+    expect(displayVolumeControl.called).toBeTruthy();
     expect(registerEvents.called).toBeTruthy();
 
     const { durationMs, progressMs } = parse(playback);
@@ -152,6 +159,7 @@ describe('Testing App', () => {
     await app.render();
     expect(displayControlButtons.called).toBeTruthy();
     expect(displayTrackInfo.called).toBeTruthy();
+    expect(displayVolumeControl.called).toBeTruthy();
     expect(registerEvents.called).toBeTruthy();
   });
 
@@ -164,6 +172,7 @@ describe('Testing App', () => {
     const app = new App();
     await app.render();
     expect(displayControlButtons.called).toBeTruthy();
+    expect(displayVolumeControl.called).toBeTruthy();
     expect(registerEvents.called).toBeTruthy();
   });
 
