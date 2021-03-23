@@ -1,19 +1,17 @@
 {
   "name": "Spotify Player",
-  "version": "1.16",
+  "version": "1.17",
   "description": "Spotify Player Microsoft Edge's extension",
   "permissions": [
     "contextMenus",
-    "declarativeContent"
-  ],
-  "host_permissions": [
+    "declarativeContent",
     "*://*.spotify.com/"
   ],
-  "manifest_version": 3,
+  "manifest_version": 2,
   "background": {
-    "service_worker": "background.js"
+    "content_scripts": "background.js"
   },
-  "action": {
+  "browser_action": {
     "default_icon": {
       "16": "images/spotify-mini-player-16.png",
       "48": "images/spotify-mini-player-48.png",
